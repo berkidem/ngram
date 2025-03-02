@@ -182,7 +182,9 @@ print(f"vocab_size: {vocab_size}")
 
 encoding = pd.read_parquet("data/onet_name_encoding.parquet")
 char_to_token = encoding.set_index("BGI_ONET_NAME")["BGI_ONET_NAME_ENCODED"].to_dict()
-EOT_TOKEN = -1  # designate -1 as the delimiting <|endoftext|> token
+
+EOT_TOKEN = 1016  # designate 1016 as the delimiting <END_OF_TEXT> token
+char_to_token["<END_OF_TEXT>"] = EOT_TOKEN
 token_to_char = {v: k for k, v in char_to_token.items()}
 
 # # pre-tokenize all the splits one time up here
@@ -202,11 +204,16 @@ val_tokens = [item for sublist in val_tokens for item in sublist]
 test_tokens = [item for sublist in test_tokens for item in sublist]
 
 print("Reading data done")
+print_current_time_est()
 
 # hyperparameter search with grid search over the validation set
 # seq_lens = [2, 3, 4, 5]
-seq_lens = [1, 2, 3]
-smoothings = [0.01, 0.03, 0.1, 0.3, 1.0, 3]
+seq_lens = [
+    3,
+]
+smoothings = [
+    0.03,
+]
 best_loss = float("inf")
 best_kwargs = {}
 for seq_len, smoothing in itertools.product(seq_lens, smoothings):
@@ -237,7 +244,7 @@ for tape in dataloader(train_tokens, seq_len):
 # sample from the model
 sample_rng = RNG(1337)
 tape = [EOT_TOKEN] * (seq_len - 1)
-for _ in range(200):
+for _ in range(10):
     probs = model(tape)
     # sample the next token
     coinf = sample_rng.random()
@@ -249,7 +256,7 @@ for _ in range(200):
     tape.append(next_token)
     if len(tape) > seq_len - 1:
         tape = tape[1:]
-    print(next_char, end="")
+    print(next_char, end=" ")
 print()  # newline
 
 # at the end, evaluate and report the test loss
@@ -262,5 +269,8 @@ counts = model.counts + model.smoothing
 probs = counts / counts.sum(axis=-1, keepdims=True)
 vis_path = os.path.join("dev", "ngram_probs.npy")
 np.save(vis_path, probs)
+vis_path_counts = os.path.join("dev", "ngram_raw_counts.npy")
+np.save(vis_path, model.counts)
+
 print(f"wrote {vis_path} to disk (for visualization)")
 print_current_time_est()
