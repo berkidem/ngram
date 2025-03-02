@@ -20,31 +20,32 @@ You'll see that the script first "trains" a small character-level Tokenizer (the
 
 ```
 python ngram.py
-seq_len 3 | smoothing 0.03 | train_loss 2.1843 | val_loss 2.2443
-seq_len 3 | smoothing 0.10 | train_loss 2.1870 | val_loss 2.2401
-seq_len 3 | smoothing 0.30 | train_loss 2.1935 | val_loss 2.2404
-seq_len 3 | smoothing 1.00 | train_loss 2.2117 | val_loss 2.2521
-seq_len 4 | smoothing 0.03 | train_loss 1.8703 | val_loss 2.1376
-seq_len 4 | smoothing 0.10 | train_loss 1.9028 | val_loss 2.1118
-seq_len 4 | smoothing 0.30 | train_loss 1.9677 | val_loss 2.1269
-seq_len 4 | smoothing 1.00 | train_loss 2.1006 | val_loss 2.2114
-seq_len 5 | smoothing 0.03 | train_loss 1.4955 | val_loss 2.3540
-seq_len 5 | smoothing 0.10 | train_loss 1.6335 | val_loss 2.2814
-seq_len 5 | smoothing 0.30 | train_loss 1.8610 | val_loss 2.3210
-seq_len 5 | smoothing 1.00 | train_loss 2.2132 | val_loss 2.4903
-best hyperparameters: {'seq_len': 4, 'smoothing': 0.1}
-felton
-jasiel
-chaseth
-nebjnvfobzadon
-brittan
-shir
-esczsvn
-freyanty
-aubren
-... (truncating) ...
-test_loss 2.106370, test_perplexity 8.218358
-wrote dev/ngram_probs.npy to disk (for visualization)
+seq_len 2 | smoothing 0.01 | train_loss 3.7600 | val_loss 3.7785
+Current time in Eastern Time: 2025-03-01 21:27:59 EST-0500
+seq_len 2 | smoothing 0.03 | train_loss 3.7602 | val_loss 3.7760
+Current time in Eastern Time: 2025-03-01 21:38:48 EST-0500
+seq_len 2 | smoothing 0.10 | train_loss 3.7608 | val_loss 3.7738
+Current time in Eastern Time: 2025-03-01 21:49:33 EST-0500
+seq_len 2 | smoothing 0.30 | train_loss 3.7625 | val_loss 3.7729
+Current time in Eastern Time: 2025-03-01 22:00:22 EST-0500
+seq_len 2 | smoothing 1.00 | train_loss 3.7682 | val_loss 3.7759
+Current time in Eastern Time: 2025-03-01 22:11:10 EST-0500
+seq_len 2 | smoothing 3.00 | train_loss 3.7833 | val_loss 3.7888
+Current time in Eastern Time: 2025-03-01 22:21:58 EST-0500
+seq_len 3 | smoothing 0.01 | train_loss 3.4550 | val_loss 3.7003
+Current time in Eastern Time: 2025-03-01 22:33:09 EST-0500
+seq_len 3 | smoothing 0.03 | train_loss 3.5006 | val_loss 3.6978
+Current time in Eastern Time: 2025-03-01 22:44:25 EST-0500
+seq_len 3 | smoothing 0.10 | train_loss 3.5857 | val_loss 3.7311
+Current time in Eastern Time: 2025-03-01 22:55:36 EST-0500
+seq_len 3 | smoothing 0.30 | train_loss 3.7044 | val_loss 3.8055
+Current time in Eastern Time: 2025-03-01 23:06:52 EST-0500
+seq_len 3 | smoothing 1.00 | train_loss 3.8842 | val_loss 3.9446
+Current time in Eastern Time: 2025-03-01 23:18:02 EST-0500
+seq_len 3 | smoothing 3.00 | train_loss 4.0951 | val_loss 4.1294
+Current time in Eastern Time: 2025-03-01 23:29:13 EST-0500
+best hyperparameters: {'seq_len': 3, 'smoothing': 0.03}
+Current time in Eastern Time: 2025-03-01 23:29:13 EST-0500
 ```
 
 As you can see, the 4-gram model sampled some relatively reasonable names like "felton" and "jasiel", but also some weirder ones like "nebjnvfobzadon", but you can't expect too much from a little 4-gram character-level language model. Finally, the test perplexity is reported at ~8.2, so the model is as confused about every character in the test set as if it was choosing randomly from 8.2 equally likely characters.
