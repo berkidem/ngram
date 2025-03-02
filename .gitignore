@@ -1,5 +1,6 @@
 config.py
 __pycache__/config.cpython-311.pyc
 *.pkl
-data/names.txt
-data/onet_name_encoding.parquet
+*.npy
+*.txt
+*.parquet

@@ -174,7 +174,7 @@ with open("data/train_sequences.pkl", "rb") as f:
 
 max_num = max(max(seq) for seq in train_text)
 min_num = min(min(seq) for seq in train_text)
-assert (min_num == -1) & (max_num == 1015)
+assert (min_num == 0) & (max_num == 1016)
 uchars = list(set([item for sublist in train_text for item in sublist]))
 uchars = sorted(uchars)
 vocab_size = len(uchars)
@@ -208,11 +208,12 @@ print_current_time_est()
 
 # hyperparameter search with grid search over the validation set
 # seq_lens = [2, 3, 4, 5]
-seq_lens = [
-    3,
-]
+seq_lens = [3, 2, 1]
 smoothings = [
     0.03,
+    0.3,
+    3.0,
+    30.0,
 ]
 best_loss = float("inf")
 best_kwargs = {}
@@ -228,6 +229,14 @@ for seq_len, smoothing in itertools.product(seq_lens, smoothings):
         "seq_len %d | smoothing %.2f | train_loss %.4f | val_loss %.4f"
         % (seq_len, smoothing, train_loss, val_loss)
     )
+    vis_path_counts = os.path.join("dev", f"ngram_raw_counts_{seq_len}_gram.npy")
+    np.save(vis_path_counts, model.counts)
+    counts = model.counts + model.smoothing
+    probs = counts / counts.sum(axis=-1, keepdims=True)
+    vis_path = os.path.join(
+        "dev", f"ngram_probs_{seq_len}_gram_{smoothing}_smoothing.npy"
+    )
+    np.save(vis_path, probs)
     print_current_time_est()
     # update the best hyperparameters
     if val_loss < best_loss:
@@ -256,7 +265,7 @@ for _ in range(10):
     tape.append(next_token)
     if len(tape) > seq_len - 1:
         tape = tape[1:]
-    print(next_char, end=" ")
+    print(next_char, end="\n")
 print()  # newline
 
 # at the end, evaluate and report the test loss
@@ -267,10 +276,8 @@ print("test_loss %f, test_perplexity %f" % (test_loss, test_perplexity))
 # get the final counts, normalize them to probs, and write to disk for vis
 counts = model.counts + model.smoothing
 probs = counts / counts.sum(axis=-1, keepdims=True)
-vis_path = os.path.join("dev", "ngram_probs.npy")
+vis_path = os.path.join("dev", "ngram_probs_best.npy")
 np.save(vis_path, probs)
-vis_path_counts = os.path.join("dev", "ngram_raw_counts.npy")
-np.save(vis_path, model.counts)
 
 print(f"wrote {vis_path} to disk (for visualization)")
 print_current_time_est()

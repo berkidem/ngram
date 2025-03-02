@@ -48,7 +48,6 @@ best hyperparameters: {'seq_len': 3, 'smoothing': 0.03}
 Current time in Eastern Time: 2025-03-01 23:29:13 EST-0500
 ```
 
-As you can see, the 4-gram model sampled some relatively reasonable names like "felton" and "jasiel", but also some weirder ones like "nebjnvfobzadon", but you can't expect too much from a little 4-gram character-level language model. Finally, the test perplexity is reported at ~8.2, so the model is as confused about every character in the test set as if it was choosing randomly from 8.2 equally likely characters.
 
 The Python code also writes out the n-gram probabilities to disk into the `dev/` folder, which you can then inspect with the attached Jupyter notebook [dev/visualize_probs.ipynb](dev/visualize_probs.ipynb).
 
