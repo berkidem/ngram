@@ -37,7 +37,7 @@ def split_and_save_sequences(
     random.shuffle(sequences)
 
     # to each sequence, add an end token, -1, numpy array
-    sequences = [np.append(seq, -1) for seq in sequences]
+    sequences = [np.insert(seq, 0, 1016) for seq in sequences]
 
     # Calculate split indices
     n = len(sequences)
