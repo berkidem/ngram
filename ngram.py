@@ -180,11 +180,15 @@ with open("data/val_sequences.pkl", "rb") as f:
 with open("data/test_sequences.pkl", "rb") as f:
     test_tokens = pickle.load(f)
 
+train_tokens = [item for sublist in train_tokens for item in sublist]
+val_tokens = [item for sublist in val_tokens for item in sublist]
+test_tokens = [item for sublist in test_tokens for item in sublist]
+
 print("Reading data done")
 
 # hyperparameter search with grid search over the validation set
-seq_lens = [3, 4, 5]
-smoothings = [0.03, 0.1, 0.3, 1.0]
+seq_lens = [2, 3, 4, 5]
+smoothings = [0, 0.03, 0.1, 0.3, 1.0]
 best_loss = float("inf")
 best_kwargs = {}
 for seq_len, smoothing in itertools.product(seq_lens, smoothings):
@@ -203,7 +207,6 @@ for seq_len, smoothing in itertools.product(seq_lens, smoothings):
     if val_loss < best_loss:
         best_loss = val_loss
         best_kwargs = {"seq_len": seq_len, "smoothing": smoothing}
-
 # re-train the model with the best hyperparameters
 seq_len = best_kwargs["seq_len"]
 print("best hyperparameters:", best_kwargs)
