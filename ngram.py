@@ -14,6 +14,23 @@ import itertools
 import pickle
 import numpy as np
 import pandas as pd
+import datetime
+import pytz
+
+
+# -----------------------------------------------------------------------------
+# utility function for time keeping
+
+
+def print_current_time_est():
+    # Define the Eastern timezone (US/Eastern will adjust for DST automatically)
+    eastern = pytz.timezone("US/Eastern")
+    # Get the current time in Eastern Time
+    current_time = datetime.datetime.now(eastern)
+    # Format the time string to include the date, time, timezone abbreviation, and offset
+    time_str = current_time.strftime("%Y-%m-%d %H:%M:%S %Z%z")
+    print("Current time in Eastern Time:", time_str)
+
 
 # -----------------------------------------------------------------------------
 # random number generation
@@ -187,8 +204,9 @@ test_tokens = [item for sublist in test_tokens for item in sublist]
 print("Reading data done")
 
 # hyperparameter search with grid search over the validation set
-seq_lens = [2, 3, 4, 5]
-smoothings = [0, 0.03, 0.1, 0.3, 1.0]
+# seq_lens = [2, 3, 4, 5]
+seq_lens = [1, 2, 3]
+smoothings = [0.01, 0.03, 0.1, 0.3, 1.0, 3]
 best_loss = float("inf")
 best_kwargs = {}
 for seq_len, smoothing in itertools.product(seq_lens, smoothings):
@@ -203,6 +221,7 @@ for seq_len, smoothing in itertools.product(seq_lens, smoothings):
         "seq_len %d | smoothing %.2f | train_loss %.4f | val_loss %.4f"
         % (seq_len, smoothing, train_loss, val_loss)
     )
+    print_current_time_est()
     # update the best hyperparameters
     if val_loss < best_loss:
         best_loss = val_loss
@@ -210,6 +229,7 @@ for seq_len, smoothing in itertools.product(seq_lens, smoothings):
 # re-train the model with the best hyperparameters
 seq_len = best_kwargs["seq_len"]
 print("best hyperparameters:", best_kwargs)
+print_current_time_est()
 model = NgramModel(vocab_size, **best_kwargs)
 for tape in dataloader(train_tokens, seq_len):
     model.train(tape)
@@ -243,3 +263,4 @@ probs = counts / counts.sum(axis=-1, keepdims=True)
 vis_path = os.path.join("dev", "ngram_probs.npy")
 np.save(vis_path, probs)
 print(f"wrote {vis_path} to disk (for visualization)")
+print_current_time_est()
