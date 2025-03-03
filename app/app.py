@@ -415,7 +415,7 @@ for i in range(k):
     occupation_inputs.append(occupation)
 
 if st.button("Generate Sequence"):
-    # Initialize the backoff model as before
+    # Initialize the backoff model
     backoff_model = BackoffNgramModel(
         vocab_size=vocab_size,
         seq_lens=[3, 2, 1],
@@ -435,7 +435,7 @@ if st.button("Generate Sequence"):
     for step in range(l):
         st.subheader(f"Step {step+1}")
 
-        # Manually determine the model to use based on the current tape
+        # determine the model to use based on the current tape
         chosen_order = None
         chosen_context = None
         for seq_len in sorted([3, 2, 1], reverse=True):
