@@ -2,9 +2,9 @@
 
 In this module we build the n-gram Occupation Prediction Model. In the process, we learn a lot of the basics of machine learning (training, evaluation, data splits, hyperparameters, overfitting) and the basics of autoregressive language modeling (tokenization, next token prediction, perplexity, sampling). GPT is "just" a very large n-gram model, too. The only difference is that GPT uses a neural network to calculate the probability of the next token, while n-gram uses a simple count-based approach.
 
-Our dataset is that of 32,032 names from [ssa.gov](https://www.ssa.gov/oact/babynames/) for the year 2018, which were split into 1,000 names in the test split, 1,000 in val split, and the rest in the training split, all of them inside the `data/` folder. Therefore, our n-gram model will essentially try to learn the statistics of the characters in these names, and then generate new names by sampling from the model.
+Our dataset is that of ~50m work experiences from the Burning Glass Institute profiles dataset, which were split into 10%/10%/80% for test/validation/training. Therefore, our n-gram model will essentially try to learn the statistics of the occupations in these careers, and then generate new careers by sampling from the model.
 
-A great reference for this module is [Chapter 3](https://web.stanford.edu/~jurafsky/slp3/3.pdf) of "Speech and Language Processing" by Jurafsky and Martin.
+A great reference for this module is [Chapter 3](https://web.stanford.edu/~jurafsky/slp3/3.pdf) of "Speech and Language Processing" by Jurafsky and Martin. (In fact, I read this chapter as a part of a reading group and remembered Karpathy's repo so I wanted to give it a go.)
 
 Currently, the best "build this repo from scratch" reference is the ["The spelled-out intro to language modeling: building makemore"](https://www.youtube.com/watch?v=PaCmpygFfXo) YouTube video, though some of the details have changed around a bit. The major departure is that the video covers a bigram Language Model, which for us is just a special case when `n = 2` for the n-gram.
 
@@ -16,36 +16,38 @@ To run the Python code, ensure you have `numpy` installed (e.g. `pip install num
 python ngram.py
 ```
 
-You'll see that the script first "trains" a small character-level Tokenizer (the vocab size is 27 for all 26 lowercase English letters and the newline character), then it conducts a small grid search of n-gram models with various hyperparameter settings for the n-gram order `n` and the smoothing factor, using the validation split. With default settings on our data, the values that turn out to be optimal are `n=4, smoothing=0.1`. It then takes this best model, samples 200 characters from it, and finally reports the test loss and perplexity. Here is the full output, it should only take a few seconds to produce:
+You'll see that the script first "trains" a small occupation-level Tokenizer (the vocab size is 1017 for all 1016 O*NET occupations and the special "end of career" token), then it conducts a small grid search of n-gram models with various hyperparameter settings for the n-gram order `n` and the smoothing factor, using the validation split. With default settings on our data, the values that turn out to be optimal are `n=3, smoothing=0.03`. It then takes this best model, samples 10 occupations from it, and finally reports the test loss and perplexity. Here is the full output:
 
 ```
 python ngram.py
-seq_len 2 | smoothing 0.01 | train_loss 3.7600 | val_loss 3.7785
-Current time in Eastern Time: 2025-03-01 21:27:59 EST-0500
-seq_len 2 | smoothing 0.03 | train_loss 3.7602 | val_loss 3.7760
-Current time in Eastern Time: 2025-03-01 21:38:48 EST-0500
-seq_len 2 | smoothing 0.10 | train_loss 3.7608 | val_loss 3.7738
-Current time in Eastern Time: 2025-03-01 21:49:33 EST-0500
-seq_len 2 | smoothing 0.30 | train_loss 3.7625 | val_loss 3.7729
-Current time in Eastern Time: 2025-03-01 22:00:22 EST-0500
-seq_len 2 | smoothing 1.00 | train_loss 3.7682 | val_loss 3.7759
-Current time in Eastern Time: 2025-03-01 22:11:10 EST-0500
-seq_len 2 | smoothing 3.00 | train_loss 3.7833 | val_loss 3.7888
-Current time in Eastern Time: 2025-03-01 22:21:58 EST-0500
-seq_len 3 | smoothing 0.01 | train_loss 3.4550 | val_loss 3.7003
-Current time in Eastern Time: 2025-03-01 22:33:09 EST-0500
+vocab_size: 1017
+Reading data done
 seq_len 3 | smoothing 0.03 | train_loss 3.5006 | val_loss 3.6978
-Current time in Eastern Time: 2025-03-01 22:44:25 EST-0500
-seq_len 3 | smoothing 0.10 | train_loss 3.5857 | val_loss 3.7311
-Current time in Eastern Time: 2025-03-01 22:55:36 EST-0500
 seq_len 3 | smoothing 0.30 | train_loss 3.7044 | val_loss 3.8055
-Current time in Eastern Time: 2025-03-01 23:06:52 EST-0500
-seq_len 3 | smoothing 1.00 | train_loss 3.8842 | val_loss 3.9446
-Current time in Eastern Time: 2025-03-01 23:18:02 EST-0500
 seq_len 3 | smoothing 3.00 | train_loss 4.0951 | val_loss 4.1294
-Current time in Eastern Time: 2025-03-01 23:29:13 EST-0500
+seq_len 3 | smoothing 30.00 | train_loss 4.7108 | val_loss 4.7196
+seq_len 2 | smoothing 0.03 | train_loss 3.7602 | val_loss 3.7761
+seq_len 2 | smoothing 0.30 | train_loss 3.7625 | val_loss 3.7729
+seq_len 2 | smoothing 3.00 | train_loss 3.7833 | val_loss 3.7888
+seq_len 2 | smoothing 30.00 | train_loss 3.9217 | val_loss 3.9239
+seq_len 1 | smoothing 0.03 | train_loss 4.7932 | val_loss 4.7931
+seq_len 1 | smoothing 0.30 | train_loss 4.7932 | val_loss 4.7931
+seq_len 1 | smoothing 3.00 | train_loss 4.7932 | val_loss 4.7931
+seq_len 1 | smoothing 30.00 | train_loss 4.7932 | val_loss 4.7931
 best hyperparameters: {'seq_len': 3, 'smoothing': 0.03}
-Current time in Eastern Time: 2025-03-01 23:29:13 EST-0500
+Cutters and Trimmers, Hand
+Costume Attendants
+Electromechanical Equipment Assemblers
+Structural Metal Fabricators and Fitters
+Structural Metal Fabricators and Fitters
+Structural Metal Fabricators and Fitters
+Structural Metal Fabricators and Fitters
+Welders, Cutters, Solderers, and Brazers
+<END_OF_TEXT>
+Pharmacists
+
+test_loss 3.699246, test_perplexity 40.416836
+wrote dev/ngram_probs_best.npy to disk (for visualization)
 ```
 
 
