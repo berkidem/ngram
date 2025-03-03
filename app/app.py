@@ -40,6 +40,140 @@ def convert_log(log, token_to_char):
 
 
 # -----------------------------------------------------------------------------
+
+
+def plot_top20(values, token_to_char, chosen_token, title):
+    """
+    Plot a bar chart of the top 20 values (counts or probabilities) sorted in descending order.
+    If the chosen token is not in the top 20, it is appended and highlighted in red.
+    """
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    # Create a Pandas Series, sorted descending
+    series = pd.Series(values, index=[token_to_char[i] for i in range(len(values))])
+    series = series.sort_values(ascending=False)
+
+    # Select the top 20 (plus chosen token, if missing)
+    top20 = series.head(20)
+    chosen_occ = token_to_char[chosen_token]
+    if chosen_occ not in top20.index:
+        top20 = pd.concat([top20, pd.Series({chosen_occ: series[chosen_occ]})])
+
+    # Prepare color coding for chosen token
+    colors = ["red" if occ == chosen_occ else "blue" for occ in top20.index]
+
+    # Create the figure with increased size
+    fig, ax = plt.subplots(figsize=(12, 5))
+
+    # Plot the bar chart
+    ax.bar(range(len(top20)), top20.values, color=colors)
+
+    # Set title and y-axis label
+    ax.set_title(title)
+    ax.set_ylabel("Value")
+
+    # Set custom x-ticks and x-tick labels
+    ax.set_xticks(range(len(top20)))
+    ax.set_xticklabels(top20.index, rotation=60, ha="right")
+
+    # Adjust layout to reduce overlap
+    fig.tight_layout()
+    return fig
+
+
+def plot_sampling_intervals(prob_values, chosen_token, coinf, token_to_char, title):
+    """
+    Plot a horizontal bar from 0 to 1, subdivided by each token's probability (top 20 + chosen token).
+    A vertical line at coinf shows the random number in [0, 1].
+    Whichever token segment covers coinf is the chosen token.
+
+    Labels:
+    - We label the top few tokens plus the chosen token if not already in the top few.
+    - Labels appear above the bar, horizontally, in black text for visibility.
+    """
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    # Convert probabilities to a Series and sort descending
+    series = pd.Series(
+        prob_values, index=[token_to_char[i] for i in range(len(prob_values))]
+    )
+    series = series.sort_values(ascending=False)
+
+    # Keep top 20 plus the chosen token if missing
+    top20 = series.head(20)
+    chosen_occ = token_to_char[chosen_token]
+    if chosen_occ not in top20.index:
+        top20 = pd.concat([top20, pd.Series({chosen_occ: series[chosen_occ]})])
+
+    tokens_ordered = top20.index
+    probs_ordered = top20.values
+
+    # Create a figure that's wide and tall enough for the bar plus labels
+    fig, ax = plt.subplots(figsize=(10, 3))
+
+    left_edge = 0.0
+    # Label the top N_LABELS tokens plus the chosen token
+    N_LABELS = 3
+    label_set = set(tokens_ordered[:N_LABELS])
+    if chosen_occ not in label_set:
+        label_set.add(chosen_occ)
+
+    # Draw stacked horizontal segments
+    for token_name, p in zip(tokens_ordered, probs_ordered):
+        right_edge = left_edge + p
+
+        # Color the segment red if it contains coinf, otherwise blue
+        if left_edge <= coinf < right_edge:
+            color = "red"
+        else:
+            color = "blue"
+
+        # Draw the bar segment
+        ax.barh(
+            y=0,
+            width=p,
+            left=left_edge,
+            height=0.4,
+            color=color,
+            edgecolor="black",
+            linewidth=1,
+            alpha=0.7,
+        )
+
+        # If this token is in label_set, place a label above its segment
+        if token_name in label_set:
+            midpoint = (left_edge + right_edge) / 2
+            ax.text(
+                x=midpoint,
+                y=0.45,  # Slightly above the bar
+                s=token_name,
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                rotation=0,  # Horizontal text
+                color="black",
+            )
+
+        left_edge = right_edge
+
+    # Draw a vertical dashed line at coinf
+    ax.axvline(coinf, color="black", linestyle="--")
+
+    # Configure the axes
+    ax.set_xlim(0, 1)
+    # Increase top y-limit so labels fit above the bar
+    ax.set_ylim(-0.2, 1.0)
+    ax.set_yticks([])
+    ax.set_xlabel("Probability Interval")
+    ax.set_title(title)
+
+    fig.tight_layout()
+    return fig
+
+
+# -----------------------------------------------------------------------------
 # Define the RNG and sampling functions from the original code
 
 
@@ -251,6 +385,7 @@ smoothing_1gram = st.sidebar.slider("1-gram smoothing", 0.01, 10.0, 1.0, step=0.
 random_seed = st.sidebar.number_input(
     "Random seed", value=1337, min_value=0, max_value=9999
 )
+visualize_probs = st.sidebar.checkbox("Show Probability Visuals", value=False)
 
 # Input parameters
 col1, col2 = st.columns(2)
@@ -279,68 +414,140 @@ for i in range(k):
     )
     occupation_inputs.append(occupation)
 
-# Button to generate sequences
 if st.button("Generate Sequence"):
-    # Initialize the backoff model
+    # Initialize the backoff model as before
     backoff_model = BackoffNgramModel(
         vocab_size=vocab_size,
         seq_lens=[3, 2, 1],
         smoothings=[smoothing_3gram, smoothing_2gram, smoothing_1gram],
         counts_threshold=counts_threshold,
     )
-
-    # Load the counts
     backoff_model.load_counts(counts_dict)
-
-    # Initialize the RNG
     sample_rng = RNG(random_seed)
 
-    # Create initial tape with EOT_TOKEN padding if k is less than context length
-    tape = []
-    for occupation in occupation_inputs:
-        tape.append(char_to_token[occupation])
+    # Prepare initial tape from selected occupations (or use EOT_TOKEN if none)
+    tape = [char_to_token[occ] for occ in occupation_inputs] if k > 0 else [EOT_TOKEN]
+    generated_tokens = []
 
-    # If k is 0, start with EOT_TOKEN
-    if k == 0:
-        tape = [EOT_TOKEN]
+    st.header("Inference Process Visualization")
 
-    # Generate next l occupations
-    generated_occupations = []
+    # Run inference for l steps
+    for step in range(l):
+        st.subheader(f"Step {step+1}")
 
-    for _ in range(l):
-        # Sample next occupation using the backoff model
-        probs = backoff_model(tape)
+        # Manually determine the model to use based on the current tape
+        chosen_order = None
+        chosen_context = None
+        for seq_len in sorted([3, 2, 1], reverse=True):
+            context_len = seq_len - 1
+            if len(tape) >= context_len:
+                context = tape[-context_len:] if context_len > 0 else []
+                raw_counts = backoff_model.models[seq_len].get_counts(context)
+                if raw_counts.sum() > counts_threshold:
+                    chosen_order = seq_len
+                    chosen_context = context
+                    backoff_model.logs.append(
+                        f"Using {seq_len}-gram model with context {context} (raw count sum: {raw_counts.sum()})"
+                    )
+                    break
+        if chosen_order is None:
+            chosen_order = 1
+            chosen_context = []
+            backoff_model.logs.append(
+                "Falling back to unigram model due to insufficient data in higher-order models."
+            )
+
+        chosen_model = backoff_model.models[chosen_order]
+        # Compute probabilities with smoothing using the chosen model
+        probs = chosen_model(chosen_context)
+
+        # Retrieve raw counts (without smoothing)
+        raw_counts = chosen_model.get_counts(chosen_context).astype(np.float32)
+        counts_sum = raw_counts.sum()
+        raw_probs = raw_counts / counts_sum if counts_sum > 0 else chosen_model.uniform
+
+        # Compute smoothed probabilities manually
+        smoothed_counts = raw_counts + chosen_model.smoothing
+        smoothed_probs = (
+            smoothed_counts / smoothed_counts.sum()
+            if smoothed_counts.sum() > 0
+            else chosen_model.uniform
+        )
+
+        # Sample a token using smoothed probabilities
         coinf = sample_rng.random()
-        next_token = sample_discrete(probs.tolist(), coinf)
+        chosen_token = sample_discrete(smoothed_probs.tolist(), coinf)
 
-        # Convert token to occupation name
-        next_occupation = token_to_char[next_token]
-        generated_occupations.append(next_occupation)
+        st.markdown(
+            f"**Model used:** {chosen_order}-gram with context: {chosen_context}"
+        )
 
-        # Update the tape
-        tape.append(next_token)
+        if visualize_probs:
+            # Plot the three visualizations in three columns
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                fig1 = plot_top20(
+                    raw_counts, token_to_char, chosen_token, "Raw Counts (Top 20)"
+                )
+                st.pyplot(fig1)
+            with col2:
+                fig2 = plot_top20(
+                    raw_probs, token_to_char, chosen_token, "Raw Probabilities (Top 20)"
+                )
+                st.pyplot(fig2)
+            with col3:
+                fig3 = plot_top20(
+                    smoothed_probs,
+                    token_to_char,
+                    chosen_token,
+                    "Smoothed Probabilities (Top 20)",
+                )
+                st.pyplot(fig3)
 
-    # Display results
-    st.header("Generated Sequence")
+        st.write(f"Chosen token: **{token_to_char[chosen_token]}**")
+        # Append the chosen token for the next step
+        tape.append(chosen_token)
+        generated_tokens.append(chosen_token)
 
-    # Display initial occupations if any
-    if k > 0:
-        st.write("Initial occupations:")
-        st.write(", ".join(occupation_inputs))
+        # After sampling chosen_token
+        if visualize_probs:
+            fig_sampling = plot_sampling_intervals(
+                smoothed_probs,
+                chosen_token,
+                coinf,
+                token_to_char,
+                "Sampling from [0,1]",
+            )
+            st.pyplot(fig_sampling)
 
-    # Display generated occupations
-    st.write("Generated next occupations:")
-    for idx, occupation in enumerate(generated_occupations):
-        st.write(f"{idx+1}. {occupation}")
-
-    # Display full sequence
-    st.write("Complete sequence:")
-    full_sequence = occupation_inputs + generated_occupations
+    st.header("Final Generated Sequence")
+    full_sequence = occupation_inputs + [token_to_char[t] for t in generated_tokens]
     st.write(" → ".join(full_sequence))
 
-    st.subheader("Debug Information")
+    if visualize_probs:
+        st.markdown(
+            """
+    ### About the Probability Visualizations
+
+    When **Show Probability Visuals** is enabled in the sidebar, the app displays three bar charts at each generation step:
+
+    1. **Raw Counts (Top 20)**: Shows how frequently each occupation (token) has appeared in the training data for the given context, **without any smoothing**.  
+    2. **Raw Probabilities (Top 20)**: Normalizes the raw counts into probabilities, i.e., dividing each token's count by the sum of all counts.  
+    3. **Smoothed Probabilities (Top 20)**: Applies smoothing to the counts (adds a small positive constant) before normalizing, ensuring no token has exactly zero probability.
+
+    In all three charts, the chosen token is highlighted in red. If the chosen token is not in the top 20 by probability, it is appended to the chart so you can still see it.
+
+    **Sampling from [0,1]**: The additional horizontal bar shows how a single random number in [0,1] determines which token is selected. Each token occupies a segment of the 0–1 interval proportional to its probability; the random number is shown as a dashed line. Whichever segment includes that line is the chosen token.
+
+    By comparing these visuals, you can see how raw counts transform into probabilities, how smoothing adjusts those probabilities, and exactly how a single random draw picks a particular occupation.
+
+    To learn more about what any of these terms mean, read on below!
+    """
+        )
+
+    st.markdown("### Debug Logs")
     for log in backoff_model.logs:
-        st.write(convert_log(log, token_to_char))
+        st.write(log)
 
 
 # Add a section explaining the backoff model
@@ -382,6 +589,8 @@ The minimum counts threshold controls when the model decides to back off to a lo
 The smoothing parameters control how much probability mass is allocated to unseen events:
 - Higher smoothing: More probability for unseen sequences, more diverse generations but it can become too generic
 - Lower smoothing: Sticks closer to observed patterns in training data, more grounded generations but can be too conservative
+
+Finally, to get different sequences from the same input, you can change the random seed. Otherwise, the same input will always generate the same output.
 
 Feel free to play around with these parameters to see how they affect the generated sequences!
 
