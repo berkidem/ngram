@@ -8,7 +8,7 @@ A great reference for this module is [Chapter 3](https://web.stanford.edu/~juraf
 
 Currently, the best "build this repo from scratch" reference is the ["The spelled-out intro to language modeling: building makemore"](https://www.youtube.com/watch?v=PaCmpygFfXo) YouTube video, though some of the details have changed around a bit. The major departure is that the video covers a bigram Language Model, which for us is just a special case when `n = 2` for the n-gram.
 
-### Python version
+## Python version
 
 To run the Python code, ensure you have `numpy` installed (e.g. `pip install numpy`), and then run the script:
 
@@ -53,18 +53,11 @@ wrote dev/ngram_probs_best.npy to disk (for visualization)
 
 The Python code also writes out the n-gram probabilities to disk into the `dev/` folder, which you can then inspect with the attached Jupyter notebook [dev/visualize_probs.ipynb](dev/visualize_probs.ipynb).
 
-### C version
+## C version
 
-The C model is identical in functionality but skips the cross-validation. Instead, it hardcodes `n=4, smoothing=0.01`, but does the training, sampling, and test perplexity evaluation and achieves the exact same results as the Python version. An example of compiling and running the C code is as follows:
+The version code is legacy from Karpathy's work but I plan to update it to work with the labor market data as well in the future. (I'll probably prioritize a transformer model so it might take a while before I circle back to this.)
 
-```bash
-clang -O3 -o ngram ngram.c -lm
-./ngram
-```
-
-The C version runs, of course, much faster. You'll see the same samples and test perplexity.
-
-### TODOs
+## TODOs
 
 - Make better
 - Make exercises
