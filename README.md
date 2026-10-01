@@ -4,6 +4,8 @@ In this module we build the n-gram Occupation Prediction Model. In the process, 
 
 Our dataset is that of ~50m work experiences from the Burning Glass Institute profiles dataset, which were split into 10%/10%/80% for test/validation/training. Therefore, our n-gram model will essentially try to learn the statistics of the occupations in these careers, and then generate new careers by sampling from the model.
 
+I generated the career sequences used here from the Burning Glass Institute's profiles data: each sequence is one worker's jobs in chronological order, coded as O*NET occupations. The data and the code that extracts it are not included in this repo, so the pipeline here starts from the resulting `occupation_sequences.pkl`.
+
 A great reference for this module is [Chapter 3](https://web.stanford.edu/~jurafsky/slp3/3.pdf) of "Speech and Language Processing" by Jurafsky and Martin. (In fact, I read this chapter as a part of a reading group and remembered Karpathy's repo so I wanted to give it a go.)
 
 Currently, the best "build this repo from scratch" reference is the ["The spelled-out intro to language modeling: building makemore"](https://www.youtube.com/watch?v=PaCmpygFfXo) YouTube video, though some of the details have changed around a bit. The major departure is that the video covers a bigram Language Model, which for us is just a special case when `n = 2` for the n-gram.
